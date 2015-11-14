@@ -18,6 +18,7 @@ class Controller {
     return $response;
   }
 
+  # Home Page
   public function index(Request $request, Response $response) {
     $response->setContent(view('index', [
       'title' => 'TV Auth'
@@ -25,9 +26,8 @@ class Controller {
     return $response;
   }
 
+  # A device submits a request here to generate a new device and user code
   public function generate_code(Request $request, Response $response) {
-    $data = [];
-
     # Params:
     # client_id
     # scope
@@ -48,6 +48,7 @@ class Controller {
     $device_code = hash('sha256', time().rand().$request->get('client_id'));
     $cache = [
       'client_id' => $request->get('client_id'),
+      // TODO: might need to also store client_secret here so that we can use it later
       'scope' => $request->get('scope'),
       'device_code' => $device_code
     ];
@@ -58,12 +59,42 @@ class Controller {
     $data = [
       'device_code' => $device_code,
       'user_code' => $user_code,
-      'verification_uri' => Config::$baseURL . '/device'
+      'verification_uri' => Config::$baseURL . '/device',
+      'interval' => 5
     ];
 
     $response->setContent(json_encode($data));
     $response->headers->set('Content-Type', 'application/json');
 
+    return $response;
+  }
+
+  # The user visits this page in a web browser
+  # This interface provides a prompt to enter a device code, which then begins the actual OAuth flow
+  public function device(Request $request, Response $response) {
+
+  }
+
+  # The browser submits a form that is a GET request to this route, which verifies
+  # and looks up the user code, and then redirects to the real authorization server
+  public function verify_code(Request $request, Response $response) {
+    if($request->get('code') == null) {
+      return $this->error($response, 'invalid_request');
+    }
+
+    // TODO: this response is not defined in the spec, should it be? or just part of a tutorial?
+    $cache = Cache::get($request->get('code'));
+    if(!$cache) {
+      return $this->error($response, 'invalid_request', 'Code not found');
+    }
+
+    $authURL = Config::$authServerURL . '?' . http_build_query([
+      'response_type' => 'code',
+      'client_id' => $cache->client_id,
+      'redirect_uri' => Config::$baseURL . '/auth/redirect'
+    ]);
+
+    $response->headers->set('Location', $authURL);
     return $response;
   }
 

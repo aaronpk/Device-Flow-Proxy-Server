@@ -10,6 +10,7 @@ $templates = new League\Plates\Engine(dirname(__FILE__).'/../views');
 $router->addRoute('GET', '/', 'Controller::index');
 $router->addRoute('GET', '/device', 'Controller::device');
 $router->addRoute('POST', '/device/code', 'Controller::generate_code');
+$router->addRoute('GET', '/device/verify_code', 'Controller::verify_code');
 
 $dispatcher = $router->getDispatcher();
 $request = Request::createFromGlobals();

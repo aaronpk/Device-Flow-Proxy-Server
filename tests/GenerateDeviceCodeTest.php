@@ -2,7 +2,7 @@
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class DeviceCodeTest extends PHPUnit_Framework_TestCase {
+class GenerateDeviceCodeTest extends PHPUnit_Framework_TestCase {
 
   public function testEmptyRequest() {
     $controller = new Controller();
@@ -28,13 +28,21 @@ class DeviceCodeTest extends PHPUnit_Framework_TestCase {
     $response = new Response();
     $response = $controller->generate_code($request, $response);
     $data = json_decode($response->getContent());
+    # Make sure there's no error
     $this->assertObjectNotHasAttribute('error', $data);
+    # Check the expected properties exist
     $this->assertObjectHasAttribute('device_code', $data);
     $this->assertObjectHasAttribute('user_code', $data);
     $this->assertObjectHasAttribute('verification_uri', $data);
+    # Make sure the values are as expected
     $this->assertStringMatchesFormat('%x', $data->device_code);
     $this->assertInternalType('integer', $data->user_code);
     $this->assertStringMatchesFormat('%s/device', $data->verification_uri);
+    # Check that the info is cached against the user code
+    $cache = Cache::get($data->user_code);
+    $this->assertNotNull($cache);
+    $this->assertEquals($cache->client_id, 'x');
+    $this->assertEquals($cache->device_code, $data->device_code);
   }
 
 }
