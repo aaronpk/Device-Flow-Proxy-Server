@@ -1,0 +1,10 @@
+language: php
+php:
+- 5.4
+- 5.5
+- nightly
+root: false
+services:
+- memcache
+before_script:
+- 'cp config.template.php config.php'
