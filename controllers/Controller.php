@@ -88,11 +88,16 @@ class Controller {
       return $this->error($response, 'invalid_request', 'Code not found');
     }
 
-    $authURL = Config::$authServerURL . '?' . http_build_query([
+    // TODO: might need to make this configurable to allow for non-standard OAuth 2 servers
+    $query = [
       'response_type' => 'code',
       'client_id' => $cache->client_id,
-      'redirect_uri' => Config::$baseURL . '/auth/redirect'
-    ]);
+      'redirect_uri' => Config::$baseURL . '/auth/redirect',
+    ];
+    if($cache->scope)
+      $query['scope'] = $cache->scope;
+    
+    $authURL = Config::$authServerURL . '?' . http_build_query($query);
 
     $response->headers->set('Location', $authURL);
     return $response;

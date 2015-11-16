@@ -45,4 +45,20 @@ class GenerateDeviceCodeTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals($cache->device_code, $data->device_code);
   }
 
+  public function testGeneratesCodeWithScope() {
+    $controller = new Controller();
+    $request = new Request(['response_type'=>'device_code', 'client_id'=>'x', 'scope'=>'user']);
+    $response = new Response();
+    $response = $controller->generate_code($request, $response);
+    $data = json_decode($response->getContent());
+    # Make sure there's no error
+    $this->assertObjectNotHasAttribute('error', $data);
+    # Check that the info is cached against the user code
+    $cache = Cache::get($data->user_code);
+    $this->assertNotNull($cache);
+    $this->assertEquals($cache->client_id, 'x');
+    $this->assertEquals($cache->device_code, $data->device_code);
+    $this->assertEquals($cache->scope, 'user');
+  }
+
 }
