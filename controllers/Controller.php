@@ -88,7 +88,8 @@ class Controller {
       return $this->error($response, 'invalid_request', 'Code not found');
     }
 
-    // TODO: might need to make this configurable to allow for non-standard OAuth 2 servers
+    // TODO: might need to make this configurable to support OAuth 2 servers that have
+    // custom parameters for the auth endpoint
     $query = [
       'response_type' => 'code',
       'client_id' => $cache->client_id,
@@ -96,11 +97,26 @@ class Controller {
     ];
     if($cache->scope)
       $query['scope'] = $cache->scope;
-    
+
     $authURL = Config::$authServerURL . '?' . http_build_query($query);
 
     $response->headers->set('Location', $authURL);
     return $response;
+  }
+
+  # After the user logs in and authorizes the app on the real auth server, they will
+  # be redirected back to here. We'll need to exchange the auth code for an access token,
+  # and then show a message that instructs the user to go back to their TV and wait.
+  public function redirect(Request $request, Response $response) {
+
+  }
+
+  # Meanwhile, the device is continually posting to this route waiting for the user to
+  # approve the request. Once the user approves the request, this route returns the access token.
+  # In addition to the standard OAuth error responses defined in https://tools.ietf.org/html/rfc6749#section-4.2.2.1
+  # the server should return: authorization_pending and slow_down
+  public function device_token(Request $request, Response $response) {
+    
   }
 
 }
