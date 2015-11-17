@@ -18,6 +18,12 @@ class Controller {
     return $response;
   }
 
+  private function success(Response $response, $data) {
+    $response->setContent(json_encode($data));
+    $response->headers->set('Content-Type', 'application/json');
+    return $response;
+  }
+
   # Home Page
   public function index(Request $request, Response $response) {
     $response->setContent(view('index', [
@@ -85,12 +91,13 @@ class Controller {
   # and looks up the user code, and then redirects to the real authorization server
   public function verify_code(Request $request, Response $response) {
     if($request->get('code') == null) {
+      // TODO: return HTML error here
       return $this->error($response, 'invalid_request');
     }
 
-    // TODO: this response is not defined in the spec, should it be? or just part of a tutorial?
     $cache = Cache::get($request->get('code'));
     if(!$cache) {
+      // TODO: return HTML error here
       return $this->error($response, 'invalid_request', 'Code not found');
     }
 
@@ -137,7 +144,7 @@ class Controller {
     # Stash the access token in the cache and display a success message
     Cache::set($device_code, [
       'status' => 'complete',
-      'access_token' => $access_token
+      'token_response' => $access_token
     ], 120);
     Cache::delete($user_code);
 
@@ -149,34 +156,50 @@ class Controller {
   # In addition to the standard OAuth error responses defined in https://tools.ietf.org/html/rfc6749#section-4.2.2.1
   # the server should return: authorization_pending and slow_down
   # TODO: presumably the device uses its device code as the authorization code here?
-  public function device_token(Request $request, Response $response) {
+  public function access_token(Request $request, Response $response) {
 
     # Verify input params
-
-    if(over rate limit) {
-      $data = [
-        'error' => 'slow_down'
-      ];
+    if($request->get('grant_type') != 'authorization_code') {
+      return $this->error($response, 'invalid_request');
     }
+
+    if($request->get('code') == null || $request->get('client_id') == null) {
+      return $this->error($response, 'invalid_request');
+    }
+
+    $device_code = $request->get('code');
+
+    #####################
+    ## RATE LIMITING
+
+    # Allow one request every 10 seconds, so divide the unix timestamp by 6 to get the rate limiting buckets
+    $bucket = 'ratelimit-'.floor(time()/6).'-'.$device_code;
+
+    if(Cache::get($bucket) >= 1) {
+      return $this->error($response, 'slow_down');
+    }
+
+    # Mark for rate limiting
+    Cache::add($bucket, 0, 60);
+    Cache::incr($bucket);
+
+    #####################
 
     # Check if the device code is in the cache
+    $data = Cache::get($device_code);
 
-    if(pending) {
-      $data = [
-        'error' => 'authorization_pending'
-      ];
-    } else if(access token exists) {
-      $data = [
-        'access_token' => ''
-      ];
-      // TODO: return the raw access token response from the real authorization server here?
-    } else {
-      $data = [
-        'error' => 'invalid_grant'
-      ];
+    if(!$data) {
+      return $this->error($response, 'invalid_grant');
     }
 
-    return $response;
+    if($data && $data->status == 'pending') {
+      return $this->error($response, 'authorization_pending');
+    } else if($data && $data->status == 'complete') {
+      // return the raw access token response from the real authorization server
+      return $this->sucecss($response, $data->token_response);
+    } else {
+      return $this->error($response, 'invalid_grant');
+    }
   }
 
 }

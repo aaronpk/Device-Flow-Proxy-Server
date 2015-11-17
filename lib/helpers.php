@@ -34,6 +34,16 @@ class Cache {
     }
   }
 
+  public static function add($key, $value, $exp=600) {
+    self::mc();
+    self::$mc->add($key, json_encode($value), 0, $exp);
+  }
+
+  public static function incr($key, $value=1) {
+    self::mc();
+    self::$mc->increment($key, $value);
+  }
+
   public static function delete($key) {
     self::mc();
     self::$mc->delete($key);
