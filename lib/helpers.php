@@ -19,10 +19,11 @@ class Cache {
     }
   }
 
-  public static function set($key, $value) {
+  public static function set($key, $value, $exp=600) {
     self::mc();
-    self::$mc->set($key, json_encode($value));
+    self::$mc->set($key, json_encode($value), 0, $exp);
   }
+
   public static function get($key) {
     self::mc();
     $data = self::$mc->get($key);
@@ -31,5 +32,10 @@ class Cache {
     } else {
       return null;
     }
+  }
+
+  public static function delete($key) {
+    self::mc();
+    self::$mc->delete($key);
   }
 }

@@ -11,7 +11,7 @@ $router->addRoute('GET', '/', 'Controller::index');
 $router->addRoute('GET', '/device', 'Controller::device');
 $router->addRoute('POST', '/device/code', 'Controller::generate_code');
 $router->addRoute('GET', '/device/verify_code', 'Controller::verify_code');
-$route->addRoute('GET', '/auth/redirect', 'Controller::redirect');
+$router->addRoute('GET', '/auth/redirect', 'Controller::redirect');
 $router->addRoute('POST', '/device/token', 'Controller::device_token');
 
 $dispatcher = $router->getDispatcher();

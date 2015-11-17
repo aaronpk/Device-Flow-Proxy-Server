@@ -53,8 +53,13 @@ class Controller {
       'device_code' => $device_code
     ];
     $user_code = rand(100000,999999);
-
     Cache::set($user_code, $cache);
+
+    # Add a placeholder entry with the device code so that the token route knows the request is pending
+    Cache::set($device_code, [
+      'timestamp' => time(),
+      'status' => 'pending'
+    ], 120);
 
     $data = [
       'device_code' => $device_code,
@@ -73,6 +78,7 @@ class Controller {
   # This interface provides a prompt to enter a device code, which then begins the actual OAuth flow
   public function device(Request $request, Response $response) {
 
+    return $response;
   }
 
   # The browser submits a form that is a GET request to this route, which verifies
@@ -94,6 +100,7 @@ class Controller {
       'response_type' => 'code',
       'client_id' => $cache->client_id,
       'redirect_uri' => Config::$baseURL . '/auth/redirect',
+      // TODO: add state here that encodes the user code
     ];
     if($cache->scope)
       $query['scope'] = $cache->scope;
@@ -108,15 +115,68 @@ class Controller {
   # be redirected back to here. We'll need to exchange the auth code for an access token,
   # and then show a message that instructs the user to go back to their TV and wait.
   public function redirect(Request $request, Response $response) {
+    # Verify input params
 
+
+    # Decode and verify the state parameter
+
+
+    # Look up the info from the user code provided in the state parameter
+    $cache = Cache::get($user_code);
+    $device_code = $cache->device_code;
+
+    # Exchange the authorization code for an access token
+
+
+    # If there are any problems getting an access token, kill the request and display an error
+    if($error) {
+      Cache::delete($user_code);
+      Cache::delete($device_code);
+    }
+
+    # Stash the access token in the cache and display a success message
+    Cache::set($device_code, [
+      'status' => 'complete',
+      'access_token' => $access_token
+    ], 120);
+    Cache::delete($user_code);
+
+    return $response;
   }
 
   # Meanwhile, the device is continually posting to this route waiting for the user to
   # approve the request. Once the user approves the request, this route returns the access token.
   # In addition to the standard OAuth error responses defined in https://tools.ietf.org/html/rfc6749#section-4.2.2.1
   # the server should return: authorization_pending and slow_down
+  # TODO: presumably the device uses its device code as the authorization code here?
   public function device_token(Request $request, Response $response) {
-    
+
+    # Verify input params
+
+    if(over rate limit) {
+      $data = [
+        'error' => 'slow_down'
+      ];
+    }
+
+    # Check if the device code is in the cache
+
+    if(pending) {
+      $data = [
+        'error' => 'authorization_pending'
+      ];
+    } else if(access token exists) {
+      $data = [
+        'access_token' => ''
+      ];
+      // TODO: return the raw access token response from the real authorization server here?
+    } else {
+      $data = [
+        'error' => 'invalid_grant'
+      ];
+    }
+
+    return $response;
   }
 
 }
