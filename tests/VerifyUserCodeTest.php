@@ -40,11 +40,16 @@ class VerifyUserCodeTest extends PHPUnit_Framework_TestCase {
     $response = new Response();
     $response = $controller->verify_code($request, $response);
 
-    $authURL = Config::$authServerURL . '?response_type=code&client_id=x&redirect_uri=' . urlencode(Config::$baseURL . '/auth/redirect');
-
     $responseString = $response->__toString();
     preg_match('/Location:\s+([^\s]+)/', $responseString, $location);
-    $this->assertEquals($location[1], $authURL);
+    $authURL = parse_url($location[1]);
+    parse_str($authURL['query'], $params);
+
+    $this->assertEquals($params['response_type'], 'code');
+    $this->assertEquals($params['client_id'], 'x');
+    $this->assertEquals($params['redirect_uri'], Config::$baseURL . '/auth/redirect');
+    $this->assertArrayNotHasKey('scope', $params);
+    $this->assertNotEmpty($params['state']);
   }
 
   public function testRedirectsToAuthServerWithScopeGivenCode() {
@@ -60,11 +65,16 @@ class VerifyUserCodeTest extends PHPUnit_Framework_TestCase {
     $response = new Response();
     $response = $controller->verify_code($request, $response);
 
-    $authURL = Config::$authServerURL . '?response_type=code&client_id=x&redirect_uri=' . urlencode(Config::$baseURL . '/auth/redirect') . '&scope=foo';
-
     $responseString = $response->__toString();
     preg_match('/Location:\s+([^\s]+)/', $responseString, $location);
-    $this->assertEquals($location[1], $authURL);
+    $authURL = parse_url($location[1]);
+    parse_str($authURL['query'], $params);
+
+    $this->assertEquals($params['response_type'], 'code');
+    $this->assertEquals($params['client_id'], 'x');
+    $this->assertEquals($params['scope'], 'foo');
+    $this->assertEquals($params['redirect_uri'], Config::$baseURL . '/auth/redirect');
+    $this->assertNotEmpty($params['state']);
   }
 
 }

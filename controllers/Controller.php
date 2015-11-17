@@ -1,6 +1,7 @@
 <?php
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use \Firebase\JWT\JWT;
 
 class Controller {
 
@@ -103,11 +104,15 @@ class Controller {
 
     // TODO: might need to make this configurable to support OAuth 2 servers that have
     // custom parameters for the auth endpoint
+    $state = JWT::encode([
+      'user_code' => $request->get('code'),
+      'time' => time()
+    ], Config::$secretKey);
     $query = [
       'response_type' => 'code',
       'client_id' => $cache->client_id,
       'redirect_uri' => Config::$baseURL . '/auth/redirect',
-      // TODO: add state here that encodes the user code
+      'state' => $state
     ];
     if($cache->scope)
       $query['scope'] = $cache->scope;
