@@ -19,6 +19,15 @@ class Controller {
     return $response;
   }
 
+  private function html_error(Response $response, $error, $error_description) {
+    $response->setStatusCode(400);
+    $response->setContent(view('error', [
+      'error' => $error,
+      'error_description' => $error_description
+    ]));
+    return $response;
+  }
+
   private function success(Response $response, $data) {
     $response->setContent(json_encode($data));
     $response->headers->set('Content-Type', 'application/json');
@@ -72,7 +81,7 @@ class Controller {
       'device_code' => $device_code,
       'user_code' => $user_code,
       'verification_uri' => Config::$baseURL . '/device',
-      'interval' => 5
+      'interval' => round(60/Config::$limitRequestsPerMinute)
     ];
 
     $response->setContent(json_encode($data));
@@ -84,7 +93,7 @@ class Controller {
   # The user visits this page in a web browser
   # This interface provides a prompt to enter a device code, which then begins the actual OAuth flow
   public function device(Request $request, Response $response) {
-
+    $response->setContent(view('device'));
     return $response;
   }
 
@@ -119,6 +128,7 @@ class Controller {
 
     $authURL = Config::$authServerURL . '?' . http_build_query($query);
 
+    $response->setStatusCode(302);
     $response->headers->set('Location', $authURL);
     return $response;
   }
@@ -128,31 +138,56 @@ class Controller {
   # and then show a message that instructs the user to go back to their TV and wait.
   public function redirect(Request $request, Response $response) {
     # Verify input params
-
+    if($request->get('state') == false || $request->get('code') == false) {
+      return $this->html_error($response, 'Invalid Request', 'Request was missing parameters');
+    }
 
     # Decode and verify the state parameter
-
+    try {
+      $state = JWT::decode($request->get('state'), Config::$secretKey, ['HS256']);
+      if(!$state) {
+        return $this->html_error($response, 'Invalid State', 'The state parameter was invalid');
+      }
+    } catch(Exception $e) {
+      return $this->html_error($response, 'Invalid State', 'The state parameter was invalid. '.$e->getMessage());
+    }
 
     # Look up the info from the user code provided in the state parameter
-    $cache = Cache::get($user_code);
-    $device_code = $cache->device_code;
+    $cache = Cache::get($state->user_code);
 
     # Exchange the authorization code for an access token
+    // TODO: Might need to provide a way to customize this request in case of
+    // non-standard OAuth 2 services
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, Config::$tokenEndpoint);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+      'grant_type' => 'authorization_code',
+      'code' => $request->get('code'),
+      'redirect_uri' => Config::$baseURL . '/auth/redirect',
+      'client_id' => $cache->client_id
+    ]));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $token_response = curl_exec($ch);
+    $access_token = json_decode($token_response);
 
-
-    # If there are any problems getting an access token, kill the request and display an error
-    if($error) {
-      Cache::delete($user_code);
-      Cache::delete($device_code);
+    if(!$access_token || !property_exists($access_token, 'access_token')) {
+      # If there are any problems getting an access token, kill the request and display an error
+      Cache::delete($state->user_code);
+      Cache::delete($cache->device_code);
+      return $this->html_error($response, 'Error Logging In', 'There was an error getting an access token from the service');
     }
 
     # Stash the access token in the cache and display a success message
-    Cache::set($device_code, [
+    Cache::set($cache->device_code, [
       'status' => 'complete',
       'token_response' => $access_token
     ], 120);
-    Cache::delete($user_code);
+    Cache::delete($state->user_code);
 
+    $response->setContent(view('signed-in', [
+      'title' => 'Signed In'
+    ]));
     return $response;
   }
 
@@ -178,7 +213,7 @@ class Controller {
     ## RATE LIMITING
 
     # Allow one request every 10 seconds, so divide the unix timestamp by 6 to get the rate limiting buckets
-    $bucket = 'ratelimit-'.floor(time()/6).'-'.$device_code;
+    $bucket = 'ratelimit-'.floor(time()/Config::$limitRequestsPerMinute).'-'.$device_code;
 
     if(Cache::get($bucket) >= 1) {
       return $this->error($response, 'slow_down');
@@ -200,8 +235,9 @@ class Controller {
     if($data && $data->status == 'pending') {
       return $this->error($response, 'authorization_pending');
     } else if($data && $data->status == 'complete') {
-      // return the raw access token response from the real authorization server
-      return $this->sucecss($response, $data->token_response);
+      # return the raw access token response from the real authorization server
+      // TODO: should we delete this from the cache after it's returned?
+      return $this->success($response, $data->token_response);
     } else {
       return $this->error($response, 'invalid_grant');
     }

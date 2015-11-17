@@ -45,9 +45,9 @@ class VerifyUserCodeTest extends PHPUnit_Framework_TestCase {
     $authURL = parse_url($location[1]);
     parse_str($authURL['query'], $params);
 
-    $this->assertEquals($params['response_type'], 'code');
-    $this->assertEquals($params['client_id'], 'x');
-    $this->assertEquals($params['redirect_uri'], Config::$baseURL . '/auth/redirect');
+    $this->assertEquals('code', $params['response_type']);
+    $this->assertEquals('x', $params['client_id']);
+    $this->assertEquals(Config::$baseURL . '/auth/redirect', $params['redirect_uri']);
     $this->assertArrayNotHasKey('scope', $params);
     $this->assertNotEmpty($params['state']);
   }
@@ -70,10 +70,10 @@ class VerifyUserCodeTest extends PHPUnit_Framework_TestCase {
     $authURL = parse_url($location[1]);
     parse_str($authURL['query'], $params);
 
-    $this->assertEquals($params['response_type'], 'code');
-    $this->assertEquals($params['client_id'], 'x');
-    $this->assertEquals($params['scope'], 'foo');
-    $this->assertEquals($params['redirect_uri'], Config::$baseURL . '/auth/redirect');
+    $this->assertEquals('code', $params['response_type']);
+    $this->assertEquals('x', $params['client_id']);
+    $this->assertEquals('foo', $params['scope']);
+    $this->assertEquals(Config::$baseURL . '/auth/redirect', $params['redirect_uri']);
     $this->assertNotEmpty($params['state']);
   }
 

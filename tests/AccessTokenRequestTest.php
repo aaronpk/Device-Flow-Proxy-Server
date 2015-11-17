@@ -12,7 +12,7 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
     $response = $controller->access_token($request, $response);
 
     $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'invalid_request');
+    $this->assertEquals('invalid_request', $data->error);
   }
 
   public function testRequestMissingParameters() {
@@ -23,14 +23,14 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
     $response = $controller->access_token($request, $response);
 
     $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'invalid_request');
+    $this->assertEquals('invalid_request', $data->error);
 
     $request = new Request(['grant_type' => 'authorization_code', 'code' => 'foo']);
     $response = new Response();
     $response = $controller->access_token($request, $response);
 
     $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'invalid_request');
+    $this->assertEquals('invalid_request', $data->error);
   }
 
   public function testInvalidGrantType() {
@@ -41,7 +41,7 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
     $response = $controller->access_token($request, $response);
 
     $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'invalid_request');
+    $this->assertEquals('invalid_request', $data->error);
   }
 
   public function testInvalidAuthorizationCode() {
@@ -52,7 +52,7 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
     $response = $controller->access_token($request, $response);
 
     $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'invalid_grant');
+    $this->assertEquals('invalid_grant', $data->error);
   }
 
   public function testRateLimiting() {
@@ -63,11 +63,11 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
 
     $response_data = $controller->access_token($request, $response);
     $data = json_decode($response_data->getContent());
-    $this->assertNotEquals($data->error, 'slow_down');
+    $this->assertNotEquals('slow_down', $data->error);
 
     $response_data = $controller->access_token($request, $response);
     $data = json_decode($response_data->getContent());
-    $this->assertEquals($data->error, 'slow_down');
+    $this->assertEquals('slow_down', $data->error);
   }
 
   public function testAuthorizationPending() {
@@ -87,6 +87,39 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
     $response_data = $controller->access_token($request, $response);
     $data = json_decode($response_data->getContent());
 
-    $this->assertEquals($data->error, 'authorization_pending');
+    $this->assertEquals('authorization_pending', $data->error);
+  }
+
+  public function testAccessTokenGranted() {
+    # obtain a device code
+    $controller = new Controller();
+    $response = new Response();
+
+    $request = new Request(['response_type'=>'device_code', 'client_id'=>'x']);
+    $response_data = $controller->generate_code($request, $response);
+    $data = json_decode($response_data->getContent());
+    $this->assertObjectNotHasAttribute('error', $data);
+
+    $device_code = $data->device_code;
+
+    # simulate the access token being granted
+    Cache::set($device_code, [
+      'status' => 'complete',
+      'token_response' => [
+        'access_token' => 'abc123',
+        'expires_in' => 600,
+        'custom' => 'foo'
+      ]
+    ]);
+
+    # check the status of the device code
+    $request = new Request(['grant_type'=>'authorization_code', 'client_id'=>'x', 'code'=>$device_code]);
+    $response_data = $controller->access_token($request, $response);
+    $data = json_decode($response_data->getContent());
+
+    $this->assertObjectNotHasAttribute('error', $data);
+    $this->assertEquals('abc123', $data->access_token);
+    $this->assertEquals(600, $data->expires_in);
+    $this->assertEquals('foo', $data->custom);
   }
 }
