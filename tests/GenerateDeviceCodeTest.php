@@ -36,7 +36,7 @@ class GenerateDeviceCodeTest extends PHPUnit_Framework_TestCase {
     $this->assertObjectHasAttribute('verification_uri', $data);
     # Make sure the values are as expected
     $this->assertStringMatchesFormat('%x', $data->device_code);
-    $this->assertInternalType('integer', $data->user_code);
+    $this->assertStringMatchesFormat('%d', $data->user_code);
     $this->assertStringMatchesFormat('%s/device', $data->verification_uri);
     # Check that the info is cached against the user code
     $cache = Cache::get($data->user_code);
