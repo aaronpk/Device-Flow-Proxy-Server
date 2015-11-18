@@ -20,5 +20,5 @@ deploy:
   skip_cleanup: true
   keyfile: TVAuth-53643d045b1b.json
   default: true
-  project: tvauth
+  project: tvauth-1133
   on: master
