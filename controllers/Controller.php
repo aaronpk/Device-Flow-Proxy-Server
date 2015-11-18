@@ -79,7 +79,7 @@ class Controller {
 
     $data = [
       'device_code' => $device_code,
-      'user_code' => $user_code,
+      'user_code' => (string)$user_code,
       'verification_uri' => Config::$baseURL . '/device',
       'interval' => round(60/Config::$limitRequestsPerMinute)
     ];
