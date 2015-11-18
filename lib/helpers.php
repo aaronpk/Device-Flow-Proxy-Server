@@ -15,6 +15,7 @@ class Cache {
         self::$mc->addServer($host);
       } else {
         self::$mc = new Memcache;
+        self::$mc->addServer('127.0.0.1');
       }
     }
   }
