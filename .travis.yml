@@ -12,13 +12,13 @@ before_script:
 - phpenv config-add php.travis.ini
 before_install:
 - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && openssl aes-256-cbc -K $encrypted_71c9cafbf2c8_key -iv $encrypted_71c9cafbf2c8_iv
-  -in TVAuth-1070d2ce7755.json.enc -out TVAuth-1070d2ce7755.json -d || true'
-- '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && openssl aes-256-cbc -K $encrypted_71c9cafbf2c8_key -iv $encrypted_71c9cafbf2c8_iv
-  -in config.gae.php.enc -out config.php -d || true'
+  -in TVAuth-53643d045b1b.json.enc -out TVAuth-53643d045b1b.json -d || true'
+- '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && openssl aes-256-cbc -K $encrypted_71c9cafbf2c8_key
+  -iv $encrypted_71c9cafbf2c8_iv -in config.gae.php.enc -out config.php -d || true'
 deploy:
   provider: gae
   skip_cleanup: true
-  keyfile: TVAuth-1070d2ce7755.json
+  keyfile: TVAuth-53643d045b1b.json
   default: true
   project: tvauth
   on: master
