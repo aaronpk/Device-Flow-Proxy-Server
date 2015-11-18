@@ -1,3 +1,5 @@
 vendor/
 .DS_Store
 config.php
+TVAuth-1070d2ce7755.json
+config.gae.php
