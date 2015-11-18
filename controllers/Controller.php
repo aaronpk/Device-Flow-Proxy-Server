@@ -222,7 +222,6 @@ class Controller {
     # Mark for rate limiting
     Cache::add($bucket, 0, 60);
     Cache::incr($bucket);
-
     #####################
 
     # Check if the device code is in the cache
