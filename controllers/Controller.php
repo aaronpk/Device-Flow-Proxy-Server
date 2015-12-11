@@ -101,7 +101,7 @@ class Controller {
   # and looks up the user code, and then redirects to the real authorization server
   public function verify_code(Request $request, Response $response) {
     if($request->get('code') == null) {
-      return $this->html_error($response, 'invalid_request');
+      return $this->html_error($response, 'invalid_request', 'No code was entered');
     }
 
     $cache = Cache::get($request->get('code'));

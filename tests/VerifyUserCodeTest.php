@@ -11,8 +11,8 @@ class VerifyUserCodeTest extends PHPUnit_Framework_TestCase {
     $response = new Response();
     $response = $controller->verify_code($request, $response);
 
-    $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'invalid_request');
+    $error = $response->getContent();
+    $this->assertContains('No code was entered', $error);
   }
 
   public function testInvalidUserCode() {
@@ -22,9 +22,9 @@ class VerifyUserCodeTest extends PHPUnit_Framework_TestCase {
     $response = new Response();
     $response = $controller->verify_code($request, $response);
 
-    $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'invalid_request');
-    $this->assertEquals($data->error_description, 'Code not found');
+    $error = $response->getContent();
+    $this->assertContains('invalid_request', $error);
+    $this->assertContains('Code not found', $error);
   }
 
   public function testRedirectsToAuthServerGivenCode() {
