@@ -101,14 +101,12 @@ class Controller {
   # and looks up the user code, and then redirects to the real authorization server
   public function verify_code(Request $request, Response $response) {
     if($request->get('code') == null) {
-      // TODO: return HTML error here
-      return $this->error($response, 'invalid_request');
+      return $this->html_error($response, 'invalid_request');
     }
 
     $cache = Cache::get($request->get('code'));
     if(!$cache) {
-      // TODO: return HTML error here
-      return $this->error($response, 'invalid_request', 'Code not found');
+      return $this->html_error($response, 'invalid_request', 'Code not found');
     }
 
     // TODO: might need to make this configurable to support OAuth 2 servers that have
