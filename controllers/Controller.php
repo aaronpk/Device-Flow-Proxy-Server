@@ -50,13 +50,15 @@ class Controller {
     # response_type=device_code
 
     # This server only supports the device_code response type
-    if($request->get('response_type') != 'device_code') {
-      return $this->error($response, 'unsupported_response_type', 'Only \'device_code\' is supported.');
+    if($request->get('grant_type') != 'urn:ietf:params:oauth:grant-
+      type:device_code') {
+      return $this->error($response, 'unsupported_grant_type', 'Only \'urn:ietf:params:oauth:grant-
+      type:device_code\' is supported.');
     }
 
     # client_id is required
     if($request->get('client_id') == null) {
-      return $this->error($response, 'invalid_request');
+      return $this->error($response, 'invalid_request', 'Missing client_id');
     }
 
     # We've validated everything we can at this stage.
@@ -64,23 +66,23 @@ class Controller {
     $device_code = hash('sha256', time().rand().$request->get('client_id'));
     $cache = [
       'client_id' => $request->get('client_id'),
-      // TODO: might need to also store client_secret here so that we can use it later
       'scope' => $request->get('scope'),
       'device_code' => $device_code
     ];
-    $user_code = rand(100000,999999);
+    $user_code = mt_rand(100000,999999);
     Cache::set($user_code, $cache);
 
     # Add a placeholder entry with the device code so that the token route knows the request is pending
     Cache::set($device_code, [
       'timestamp' => time(),
       'status' => 'pending'
-    ], 120);
+    ], 300);
 
     $data = [
       'device_code' => $device_code,
       'user_code' => (string)$user_code,
       'verification_uri' => Config::$baseURL . '/device',
+      'expires_in' => 300,
       'interval' => round(60/Config::$limitRequestsPerMinute)
     ];
 
