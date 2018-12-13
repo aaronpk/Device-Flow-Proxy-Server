@@ -6,28 +6,26 @@ function view($template, $data=[]) {
 }
 
 class Cache {
-  private static $mc;
+  private static $redis;
 
-  public static function mc($host=false) {
-    if(!isset(self::$mc)) {
+  public static function connect($host=false) {
+    if(!isset(self::$redis)) {
       if($host) {
-        self::$mc = new Memcache;
-        self::$mc->addServer($host);
+        self::$redis = new Predis\Client($host);
       } else {
-        self::$mc = new Memcache;
-        self::$mc->addServer('127.0.0.1');
+        self::$redis = new Predis\Client();
       }
     }
   }
 
   public static function set($key, $value, $exp=600) {
-    self::mc();
-    self::$mc->set($key, json_encode($value), 0, $exp);
+    self::connect();
+    self::$redis->setex($key, $exp, json_encode($value));
   }
 
   public static function get($key) {
-    self::mc();
-    $data = self::$mc->get($key);
+    self::connect();
+    $data = self::$redis->get($key);
     if($data) {
       return json_decode($data);
     } else {
@@ -36,17 +34,17 @@ class Cache {
   }
 
   public static function add($key, $value, $exp=600) {
-    self::mc();
-    self::$mc->add($key, json_encode($value), 0, $exp);
+    self::connect();
+    self::$redis->setex($key, $exp, json_encode($value));
   }
 
   public static function incr($key, $value=1) {
-    self::mc();
-    self::$mc->increment($key, $value);
+    self::connect();
+    self::$redis->incrby($key, $value);
   }
 
   public static function delete($key) {
-    self::mc();
-    self::$mc->delete($key);
+    self::connect();
+    self::$redis->del($key);
   }
 }
