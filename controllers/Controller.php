@@ -197,13 +197,13 @@ class Controller {
   # the server should return: authorization_pending and slow_down
   public function access_token(Request $request, Response $response) {
 
+    if($request->get('device_code') == null || $request->get('client_id') == null || $request->get('grant_type') == null) {
+      return $this->error($response, 'invalid_request');
+    }
+
     # This server only supports the device_code response type
     if($request->get('grant_type') != 'urn:ietf:params:oauth:grant-type:device_code') {
       return $this->error($response, 'unsupported_grant_type', 'Only \'urn:ietf:params:oauth:grant-type:device_code\' is supported.');
-    }
-
-    if($request->get('device_code') == null || $request->get('client_id') == null) {
-      return $this->error($response, 'invalid_request');
     }
 
     $device_code = $request->get('device_code');

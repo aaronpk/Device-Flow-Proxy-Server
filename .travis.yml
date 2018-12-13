@@ -1,12 +1,10 @@
 language: php
 php:
-- 5.5
-- 5.6
+- 7.2
 sudo: false
 services:
-- memcached
+- redis
 before_script:
 - cp config.template.php config.php
 - composer self-update
 - composer install --prefer-dist --no-interaction
-- phpenv config-add php.travis.ini

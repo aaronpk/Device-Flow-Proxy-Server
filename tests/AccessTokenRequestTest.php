@@ -2,7 +2,7 @@
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
+class AccessTokenRequestTest extends PHPUnit\Framework\TestCase {
 
   public function testEmptyRequest() {
     $controller = new Controller();
@@ -18,14 +18,14 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
   public function testRequestMissingParameters() {
     $controller = new Controller();
 
-    $request = new Request(['grant_type' => 'authorization_code']);
+    $request = new Request(['grant_type' => 'urn:ietf:params:oauth:grant-type:device_code']);
     $response = new Response();
     $response = $controller->access_token($request, $response);
 
     $data = json_decode($response->getContent());
     $this->assertEquals('invalid_request', $data->error);
 
-    $request = new Request(['grant_type' => 'authorization_code', 'code' => 'foo']);
+    $request = new Request(['grant_type' => 'urn:ietf:params:oauth:grant-type:device_code', 'code' => 'foo']);
     $response = new Response();
     $response = $controller->access_token($request, $response);
 
@@ -47,7 +47,7 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
   public function testInvalidAuthorizationCode() {
     $controller = new Controller();
 
-    $request = new Request(['grant_type' => 'authorization_code', 'code' => 'foo.'.microtime(true), 'client_id' => 'bar']);
+    $request = new Request(['grant_type' => 'urn:ietf:params:oauth:grant-type:device_code', 'device_code' => 'foo.'.microtime(true), 'client_id' => 'bar']);
     $response = new Response();
     $response = $controller->access_token($request, $response);
 
@@ -58,7 +58,7 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
   public function testRateLimiting() {
     $controller = new Controller();
 
-    $request = new Request(['grant_type'=>'authorization_code', 'code'=>'foo.'.microtime(true), 'client_id'=>'bar']);
+    $request = new Request(['grant_type'=>'urn:ietf:params:oauth:grant-type:device_code', 'device_code'=>'foo.'.microtime(true), 'client_id'=>'bar']);
     $response = new Response();
 
     $response_data = $controller->access_token($request, $response);
@@ -83,7 +83,7 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
     $device_code = $data->device_code;
 
     # check the status of the device code
-    $request = new Request(['grant_type'=>'authorization_code', 'client_id'=>'x', 'code'=>$device_code]);
+    $request = new Request(['grant_type'=>'urn:ietf:params:oauth:grant-type:device_code', 'client_id'=>'x', 'device_code'=>$device_code]);
     $response_data = $controller->access_token($request, $response);
     $data = json_decode($response_data->getContent());
 
@@ -113,7 +113,7 @@ class AccessTokenRequestTest extends PHPUnit_Framework_TestCase {
     ]);
 
     # check the status of the device code
-    $request = new Request(['grant_type'=>'authorization_code', 'client_id'=>'x', 'code'=>$device_code]);
+    $request = new Request(['grant_type'=>'urn:ietf:params:oauth:grant-type:device_code', 'client_id'=>'x', 'device_code'=>$device_code]);
     $response_data = $controller->access_token($request, $response);
     $data = json_decode($response_data->getContent());
 

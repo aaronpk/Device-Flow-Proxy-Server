@@ -4,7 +4,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 $templates = new League\Plates\Engine(dirname(__FILE__).'/../views');
 
-class RedirectTest extends PHPUnit_Framework_TestCase {
+class RedirectTest extends PHPUnit\Framework\TestCase {
 
   public function testEmptyRequest() {
     $controller = new Controller();

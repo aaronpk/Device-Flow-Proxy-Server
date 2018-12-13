@@ -2,20 +2,11 @@
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class GenerateDeviceCodeTest extends PHPUnit_Framework_TestCase {
+class GenerateDeviceCodeTest extends PHPUnit\Framework\TestCase {
 
   public function testEmptyRequest() {
     $controller = new Controller();
     $request = new Request();
-    $response = new Response();
-    $response = $controller->generate_code($request, $response);
-    $data = json_decode($response->getContent());
-    $this->assertEquals($data->error, 'unsupported_response_type');
-  }
-
-  public function testMissingClientID() {
-    $controller = new Controller();
-    $request = new Request(['response_type'=>'device_code']);
     $response = new Response();
     $response = $controller->generate_code($request, $response);
     $data = json_decode($response->getContent());
@@ -24,7 +15,7 @@ class GenerateDeviceCodeTest extends PHPUnit_Framework_TestCase {
 
   public function testGeneratesCode() {
     $controller = new Controller();
-    $request = new Request(['response_type'=>'device_code', 'client_id'=>'x']);
+    $request = new Request(['client_id'=>'x']);
     $response = new Response();
     $response = $controller->generate_code($request, $response);
     $data = json_decode($response->getContent());
