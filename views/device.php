@@ -3,10 +3,10 @@
 <p>Enter the code shown on your device to continue.</p>
 
 <form action="/auth/verify_code" method="get">
-  <input type="text" name="code" placeholder="xxxxxx" id="user_code">
+  <input type="text" name="code" placeholder="xxxxxx" id="user_code" value="<?= $code ?>">
   <input type="submit">
 </form>
 
 <script>
-document.getElementById("user_code").focus()
+document.getElementById("user_code").focus();
 </script>

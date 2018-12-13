@@ -47,14 +47,6 @@ class Controller {
     # Params:
     # client_id
     # scope
-    # response_type=device_code
-
-    # This server only supports the device_code response type
-    if($request->get('grant_type') != 'urn:ietf:params:oauth:grant-
-      type:device_code') {
-      return $this->error($response, 'unsupported_grant_type', 'Only \'urn:ietf:params:oauth:grant-
-      type:device_code\' is supported.');
-    }
 
     # client_id is required
     if($request->get('client_id') == null) {
@@ -66,6 +58,7 @@ class Controller {
     $device_code = hash('sha256', time().rand().$request->get('client_id'));
     $cache = [
       'client_id' => $request->get('client_id'),
+      'client_secret' => $request->get('client_secret'),
       'scope' => $request->get('scope'),
       'device_code' => $device_code
     ];
@@ -95,7 +88,7 @@ class Controller {
   # The user visits this page in a web browser
   # This interface provides a prompt to enter a device code, which then begins the actual OAuth flow
   public function device(Request $request, Response $response) {
-    $response->setContent(view('device'));
+    $response->setContent(view('device', ['code' => $request->get('code')]));
     return $response;
   }
 
@@ -120,6 +113,7 @@ class Controller {
     $query = [
       'response_type' => 'code',
       'client_id' => $cache->client_id,
+      'client_secret' => $cache->client_secret,
       'redirect_uri' => Config::$baseURL . '/auth/redirect',
       'state' => $state
     ];
@@ -158,15 +152,21 @@ class Controller {
     # Exchange the authorization code for an access token
     // TODO: Might need to provide a way to customize this request in case of
     // non-standard OAuth 2 services
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, Config::$tokenEndpoint);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+
+    $params = [
       'grant_type' => 'authorization_code',
       'code' => $request->get('code'),
       'redirect_uri' => Config::$baseURL . '/auth/redirect',
-      'client_id' => $cache->client_id
-    ]));
+      'client_id' => $cache->client_id,
+    ];
+    if($cache->client_secret) {
+      $params['client_secret'] = $cache->client_secret;
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, Config::$tokenEndpoint);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $token_response = curl_exec($ch);
     $access_token = json_decode($token_response);
@@ -175,7 +175,7 @@ class Controller {
       # If there are any problems getting an access token, kill the request and display an error
       Cache::delete($state->user_code);
       Cache::delete($cache->device_code);
-      return $this->html_error($response, 'Error Logging In', 'There was an error getting an access token from the service');
+      return $this->html_error($response, 'Error Logging In', 'There was an error getting an access token from the service <p><pre>'.$token_response.'</pre></p>');
     }
 
     # Stash the access token in the cache and display a success message
@@ -195,19 +195,18 @@ class Controller {
   # approve the request. Once the user approves the request, this route returns the access token.
   # In addition to the standard OAuth error responses defined in https://tools.ietf.org/html/rfc6749#section-4.2.2.1
   # the server should return: authorization_pending and slow_down
-  # TODO: presumably the device uses its device code as the authorization code here?
   public function access_token(Request $request, Response $response) {
 
-    # Verify input params
-    if($request->get('grant_type') != 'authorization_code') {
+    # This server only supports the device_code response type
+    if($request->get('grant_type') != 'urn:ietf:params:oauth:grant-type:device_code') {
+      return $this->error($response, 'unsupported_grant_type', 'Only \'urn:ietf:params:oauth:grant-type:device_code\' is supported.');
+    }
+
+    if($request->get('device_code') == null || $request->get('client_id') == null) {
       return $this->error($response, 'invalid_request');
     }
 
-    if($request->get('code') == null || $request->get('client_id') == null) {
-      return $this->error($response, 'invalid_request');
-    }
-
-    $device_code = $request->get('code');
+    $device_code = $request->get('device_code');
 
     #####################
     ## RATE LIMITING
@@ -235,7 +234,7 @@ class Controller {
       return $this->error($response, 'authorization_pending');
     } else if($data && $data->status == 'complete') {
       # return the raw access token response from the real authorization server
-      // TODO: should we delete this from the cache after it's returned?
+      Cache::delete($device_code);
       return $this->success($response, $data->token_response);
     } else {
       return $this->error($response, 'invalid_grant');
