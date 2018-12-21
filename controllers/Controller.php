@@ -55,12 +55,15 @@ class Controller {
 
     # We've validated everything we can at this stage.
     # Generate a verification code and cache it along with the other values in the request.
-    $device_code = hash('sha256', time().rand().$request->get('client_id'));
+    $device_code = hash('sha256', time().mt_rand().$request->get('client_id'));
+    # Generate a PKCE code_verifier and store it in the cache too
+    $pkce_verifier = hash('sha256', time().mt_rand());
     $cache = [
       'client_id' => $request->get('client_id'),
       'client_secret' => $request->get('client_secret'),
       'scope' => $request->get('scope'),
-      'device_code' => $device_code
+      'device_code' => $device_code,
+      'pkce_verifier' => $pkce_verifier,
     ];
     $user_code = mt_rand(100000,999999);
     Cache::set($user_code, $cache);
@@ -102,20 +105,25 @@ class Controller {
     $cache = Cache::get($request->get('code'));
     if(!$cache) {
       return $this->html_error($response, 'invalid_request', 'Code not found');
-    }
+    }    
 
-    // TODO: might need to make this configurable to support OAuth 2 servers that have
-    // custom parameters for the auth endpoint
     $state = JWT::encode([
       'user_code' => $request->get('code'),
       'time' => time()
     ], Config::$secretKey);
+
+    $pkce_challenge = base64_urlencode(hash('sha256', $cache->pkce_verifier, true));
+
+    // TODO: might need to make this configurable to support OAuth 2 servers that have
+    // custom parameters for the auth endpoint
     $query = [
       'response_type' => 'code',
       'client_id' => $cache->client_id,
       'client_secret' => $cache->client_secret,
       'redirect_uri' => Config::$baseURL . '/auth/redirect',
-      'state' => $state
+      'state' => $state,
+      'code_challenge' => $pkce_challenge,
+      'code_challenge_method' => 'S256',
     ];
     if($cache->scope)
       $query['scope'] = $cache->scope;
@@ -158,6 +166,7 @@ class Controller {
       'code' => $request->get('code'),
       'redirect_uri' => Config::$baseURL . '/auth/redirect',
       'client_id' => $cache->client_id,
+      'code_verifier' => $cache->pkce_verifier,
     ];
     if($cache->client_secret) {
       $params['client_secret'] = $cache->client_secret;

@@ -5,6 +5,10 @@ function view($template, $data=[]) {
   return $templates->render($template, $data);
 }
 
+function base64_urlencode($string) {
+  return rtrim(strtr(base64_encode($string), '+/', '-_'), '=');
+}
+
 class Cache {
   private static $redis;
 
