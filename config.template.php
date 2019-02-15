@@ -7,5 +7,5 @@ class Config {
   public static $authServerURL = 'https://example.com/oauth2/authorize';
   public static $tokenEndpoint = 'https://example.com/oauth2/token';
 
-  public static $secretKey = 'xxx';
+  public static $secretKey = '{secret}';
 }
