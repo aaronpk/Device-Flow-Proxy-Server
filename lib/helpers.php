@@ -9,6 +9,14 @@ function base64_urlencode($string) {
   return rtrim(strtr(base64_encode($string), '+/', '-_'), '=');
 }
 
+function random_alpha_string($len) {
+  $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  $str = '';
+  for($i=0; $i<$len; $i++)
+    $str .= substr($chars, random_int(0, strlen($chars)-1), 1);
+  return $str;
+}
+
 class Cache {
   private static $redis;
 

@@ -3,7 +3,7 @@
 <p>Enter the code shown on your device to continue.</p>
 
 <form action="/auth/verify_code" method="get">
-  <input type="text" name="code" placeholder="xxxxxx" id="user_code" value="<?= $code ?>">
+  <input type="text" name="code" placeholder="XXXX-XXXX" id="user_code" value="<?= $code ?>" autocomplete="off">
   <input type="submit">
 </form>
 

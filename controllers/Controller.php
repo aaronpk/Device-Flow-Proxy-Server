@@ -1,7 +1,6 @@
 <?php
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use \Firebase\JWT\JWT;
 
 class Controller {
 
@@ -37,7 +36,7 @@ class Controller {
   # Home Page
   public function index(Request $request, Response $response) {
     $response->setContent(view('index', [
-      'title' => 'TV Auth'
+      'title' => 'Device Flow Proxy Server'
     ]));
     return $response;
   }
@@ -55,9 +54,9 @@ class Controller {
 
     # We've validated everything we can at this stage.
     # Generate a verification code and cache it along with the other values in the request.
-    $device_code = hash('sha256', time().mt_rand().$request->get('client_id'));
+    $device_code = bin2hex(random_bytes(32));
     # Generate a PKCE code_verifier and store it in the cache too
-    $pkce_verifier = hash('sha256', time().mt_rand());
+    $pkce_verifier = bin2hex(random_bytes(32));
     $cache = [
       'client_id' => $request->get('client_id'),
       'client_secret' => $request->get('client_secret'),
@@ -65,8 +64,8 @@ class Controller {
       'device_code' => $device_code,
       'pkce_verifier' => $pkce_verifier,
     ];
-    $user_code = mt_rand(100000,999999);
-    Cache::set($user_code, $cache);
+    $user_code = random_alpha_string(4).'-'.random_alpha_string(4);
+    Cache::set(str_replace('-', '', $user_code), $cache, 300); # store without the hyphen
 
     # Add a placeholder entry with the device code so that the token route knows the request is pending
     Cache::set($device_code, [
@@ -76,7 +75,7 @@ class Controller {
 
     $data = [
       'device_code' => $device_code,
-      'user_code' => (string)$user_code,
+      'user_code' => $user_code,
       'verification_uri' => Config::$baseURL . '/device',
       'expires_in' => 300,
       'interval' => round(60/Config::$limitRequestsPerMinute)
@@ -102,24 +101,28 @@ class Controller {
       return $this->html_error($response, 'invalid_request', 'No code was entered');
     }
 
-    $cache = Cache::get($request->get('code'));
+    $user_code = $request->get('code');
+    # Remove hyphens and convert to uppercase to make it easier for users to enter the code
+    $user_code = strtoupper(str_replace('-', '', $user_code));
+
+    $cache = Cache::get($user_code);
     if(!$cache) {
       return $this->html_error($response, 'invalid_request', 'Code not found');
     }    
 
-    $state = JWT::encode([
-      'user_code' => $request->get('code'),
-      'time' => time()
-    ], Config::$secretKey);
+    $state = bin2hex(random_bytes(16));
+    Cache::set('state:'.$state, [
+      'user_code' => $user_code,
+      'timestamp' => time(),
+    ], 300);
 
     $pkce_challenge = base64_urlencode(hash('sha256', $cache->pkce_verifier, true));
 
-    // TODO: might need to make this configurable to support OAuth 2 servers that have
+    // TODO: might need to make this configurable to support OAuth servers that have
     // custom parameters for the auth endpoint
     $query = [
       'response_type' => 'code',
       'client_id' => $cache->client_id,
-      'client_secret' => $cache->client_secret,
       'redirect_uri' => Config::$baseURL . '/auth/redirect',
       'state' => $state,
       'code_challenge' => $pkce_challenge,
@@ -144,22 +147,18 @@ class Controller {
       return $this->html_error($response, 'Invalid Request', 'Request was missing parameters');
     }
 
-    # Decode and verify the state parameter
-    try {
-      $state = JWT::decode($request->get('state'), Config::$secretKey, ['HS256']);
-      if(!$state) {
-        return $this->html_error($response, 'Invalid State', 'The state parameter was invalid');
-      }
-    } catch(Exception $e) {
-      return $this->html_error($response, 'Invalid State', 'The state parameter was invalid. '.$e->getMessage());
+    # Check that the state parameter matches
+    if(!($state=Cache::get('state:'.$request->get('state')))) {
+      return $this->html_error($response, 'Invalid State', 'The state parameter was invalid');
     }
 
     # Look up the info from the user code provided in the state parameter
     $cache = Cache::get($state->user_code);
 
     # Exchange the authorization code for an access token
-    // TODO: Might need to provide a way to customize this request in case of
-    // non-standard OAuth 2 services
+
+    # TODO: Might need to provide a way to customize this request in case of
+    # non-standard OAuth 2 services
 
     $params = [
       'grant_type' => 'authorization_code',
