@@ -1,5 +1,4 @@
 vendor/
 .DS_Store
 config.php
-TVAuth-53643d045b1b.json
-config.gae.php
+.phpunit.result.cache

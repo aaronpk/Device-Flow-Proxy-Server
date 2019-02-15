@@ -14,7 +14,7 @@ class RedirectTest extends PHPUnit\Framework\TestCase {
     $response = $controller->redirect($request, $response);
 
     $html = $response->getContent();
-    $this->assertContains('Invalid Request', $html);
+    $this->assertStringContainsString('Invalid Request', $html);
   }
 
   public function testInvalidState() {
@@ -25,7 +25,7 @@ class RedirectTest extends PHPUnit\Framework\TestCase {
     $response = $controller->redirect($request, $response);
 
     $html = $response->getContent();
-    $this->assertContains('Invalid State', $html);
+    $this->assertStringContainsString('Invalid State', $html);
   }
 
 }
