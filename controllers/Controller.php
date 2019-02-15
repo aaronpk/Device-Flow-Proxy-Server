@@ -131,7 +131,7 @@ class Controller {
     if($cache->scope)
       $query['scope'] = $cache->scope;
 
-    $authURL = Config::$authServerURL . '?' . http_build_query($query);
+    $authURL = Config::$authEndpoint . '?' . http_build_query($query);
 
     $response->setStatusCode(302);
     $response->headers->set('Location', $authURL);
