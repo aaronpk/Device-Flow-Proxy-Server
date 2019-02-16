@@ -13,7 +13,7 @@ class Controller {
     }
 
     $response->setStatusCode(400);
-    $response->setContent(json_encode($data));
+    $response->setContent($this->_json($data));
     $response->headers->set('Content-Type', 'application/json');
     return $response;
   }
@@ -28,7 +28,7 @@ class Controller {
   }
 
   private function success(Response $response, $data) {
-    $response->setContent(json_encode($data));
+    $response->setContent($this->_json($data));
     $response->headers->set('Content-Type', 'application/json');
     return $response;
   }
@@ -81,10 +81,7 @@ class Controller {
       'interval' => round(60/Config::$limitRequestsPerMinute)
     ];
 
-    $response->setContent(json_encode($data));
-    $response->headers->set('Content-Type', 'application/json');
-
-    return $response;
+    return $this->success($response, $data);
   }
 
   # The user visits this page in a web browser
@@ -247,6 +244,10 @@ class Controller {
     } else {
       return $this->error($response, 'invalid_grant');
     }
+  }
+
+  private function _json($data) {
+    return json_encode($data, JSON_PRETTY_PRINT+JSON_UNESCAPED_SLASHES)."\n";
   }
 
 }
