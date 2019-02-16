@@ -50,6 +50,11 @@ class Cache {
     self::$redis->setex($key, $exp, json_encode($value));
   }
 
+  public static function expire($key, $exp) {
+    self::connect();
+    self::$redis->expire($key, $exp);
+  }
+
   public static function incr($key, $value=1) {
     self::connect();
     self::$redis->incrby($key, $value);

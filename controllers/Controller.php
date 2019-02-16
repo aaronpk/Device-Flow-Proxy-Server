@@ -216,16 +216,16 @@ class Controller {
     #####################
     ## RATE LIMITING
 
-    # Allow one request every 10 seconds, so divide the unix timestamp by 6 to get the rate limiting buckets
-    $bucket = 'ratelimit-'.floor(time()/Config::$limitRequestsPerMinute).'-'.$device_code;
+    # Count the number of requests per minute
+    $bucket = 'ratelimit-'.floor(time()/60).'-'.$device_code;
 
-    if(Cache::get($bucket) >= 1) {
+    if(Cache::get($bucket) >= Config::$limitRequestsPerMinute) {
       return $this->error($response, 'slow_down');
     }
 
     # Mark for rate limiting
-    Cache::add($bucket, 0, 60);
     Cache::incr($bucket);
+    Cache::expire($bucket, 60);
     #####################
 
     # Check if the device code is in the cache
