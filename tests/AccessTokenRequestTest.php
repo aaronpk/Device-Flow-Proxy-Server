@@ -61,9 +61,11 @@ class AccessTokenRequestTest extends PHPUnit\Framework\TestCase {
     $request = new Request(['grant_type'=>'urn:ietf:params:oauth:grant-type:device_code', 'device_code'=>'foo.'.microtime(true), 'client_id'=>'bar']);
     $response = new Response();
 
-    $response_data = $controller->access_token($request, $response);
-    $data = json_decode($response_data->getContent());
-    $this->assertNotEquals('slow_down', $data->error);
+    for($i=0; $i<12; $i++) {
+        $response_data = $controller->access_token($request, $response);
+        $data = json_decode($response_data->getContent());
+        $this->assertNotEquals('slow_down', $data->error);
+    }
 
     $response_data = $controller->access_token($request, $response);
     $data = json_decode($response_data->getContent());
