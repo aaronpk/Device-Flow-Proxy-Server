@@ -15,6 +15,8 @@ cp config.template.php config.php
 
 Enter the base URL of where this service is running, and add a random secret to the config file.
 
+The config file assumes [Redis](https://redis.io) is installed on the same machine on the default port. You will need to install Redis if it is not already on your system.
+
 Define your OAuth server's authorization endpoint and token endpoint URL.
 
 Usage
