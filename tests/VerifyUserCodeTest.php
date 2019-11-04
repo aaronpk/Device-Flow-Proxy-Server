@@ -47,7 +47,7 @@ class VerifyUserCodeTest extends PHPUnit\Framework\TestCase {
 
     $this->assertEquals('code', $params['response_type']);
     $this->assertEquals('x', $params['client_id']);
-    $this->assertEquals(Config::$baseURL . '/auth/redirect', $params['redirect_uri']);
+    $this->assertEquals(getenv('BASE_URL') . '/auth/redirect', $params['redirect_uri']);
     $this->assertArrayNotHasKey('scope', $params);
     $this->assertNotEmpty($params['state']);
   }
@@ -73,7 +73,7 @@ class VerifyUserCodeTest extends PHPUnit\Framework\TestCase {
     $this->assertEquals('code', $params['response_type']);
     $this->assertEquals('x', $params['client_id']);
     $this->assertEquals('foo', $params['scope']);
-    $this->assertEquals(Config::$baseURL . '/auth/redirect', $params['redirect_uri']);
+    $this->assertEquals(getenv('BASE_URL') . '/auth/redirect', $params['redirect_uri']);
     $this->assertNotEmpty($params['state']);
   }
 

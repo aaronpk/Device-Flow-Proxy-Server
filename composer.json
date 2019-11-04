@@ -2,14 +2,14 @@
   "require": {
     "league/route": "~1.2",
     "league/plates": "~3.1",
-    "predis/predis": "^1.1"
+    "predis/predis": "^1.1",
+    "vlucas/phpdotenv": "^3.6"
   },
   "require-dev": {
     "phpunit/phpunit": "*"
   },
   "autoload": {
     "files": [
-      "config.php",
       "lib/helpers.php",
       "controllers/Controller.php"
     ]

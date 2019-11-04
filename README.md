@@ -10,12 +10,12 @@ Installation
 
 ```
 composer install
-cp config.template.php config.php
+cp .env.example .env
 ```
 
-Enter the base URL of where this service is running, and add a random secret to the config file.
+In the `.env` file, fill out the required variables.
 
-The config file assumes [Redis](https://redis.io) is installed on the same machine on the default port. You will need to install Redis if it is not already on your system.
+You will need to install Redis if it is not already on your system, or point to an existing redis server in the config file.
 
 Define your OAuth server's authorization endpoint and token endpoint URL.
 

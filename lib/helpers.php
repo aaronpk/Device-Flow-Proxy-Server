@@ -1,4 +1,31 @@
 <?php
+use Dotenv\Dotenv;
+
+// Load .env file if exists
+$dotenv = Dotenv::create(__DIR__.'/..');
+if(file_exists(__DIR__.'/../.env')) {
+  $dotenv->load();
+}
+
+// Check if environment variables are defined, or return an error
+$required = ['BASE_URL', 'LIMIT_REQUESTS_PER_MINUTE', 'AUTHORIZATION_ENDPOINT', 'TOKEN_ENDPOINT'];
+$complete = true;
+foreach($required as $r) {
+  if(!getenv($r))
+    $complete = false;
+}
+if(!$complete) {
+  echo "Missing app configuration.\n";
+  echo "Please copy .env.example to .env and fill out the variables, or\n";
+  echo "define all environment variables accordingly.\n";
+  die(1);
+}
+
+if(getenv('REDIS_URL')) {
+  $result = Cache::connect(getenv('REDIS_URL'));
+  var_dump($result);
+}
+
 
 function view($template, $data=[]) {
   global $templates;

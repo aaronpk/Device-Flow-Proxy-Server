@@ -76,9 +76,9 @@ class Controller {
     $data = [
       'device_code' => $device_code,
       'user_code' => $user_code,
-      'verification_uri' => Config::$baseURL . '/device',
+      'verification_uri' => getenv('BASE_URL') . '/device',
       'expires_in' => 300,
-      'interval' => round(60/Config::$limitRequestsPerMinute)
+      'interval' => round(60/getenv('LIMIT_REQUESTS_PER_MINUTE'))
     ];
 
     return $this->success($response, $data);
@@ -105,7 +105,7 @@ class Controller {
     $cache = Cache::get($user_code);
     if(!$cache) {
       return $this->html_error($response, 'invalid_request', 'Code not found');
-    }    
+    }
 
     $state = bin2hex(random_bytes(16));
     Cache::set('state:'.$state, [
@@ -120,7 +120,7 @@ class Controller {
     $query = [
       'response_type' => 'code',
       'client_id' => $cache->client_id,
-      'redirect_uri' => Config::$baseURL . '/auth/redirect',
+      'redirect_uri' => getenv('BASE_URL') . '/auth/redirect',
       'state' => $state,
       'code_challenge' => $pkce_challenge,
       'code_challenge_method' => 'S256',
@@ -128,7 +128,7 @@ class Controller {
     if($cache->scope)
       $query['scope'] = $cache->scope;
 
-    $authURL = Config::$authEndpoint . '?' . http_build_query($query);
+    $authURL = getenv('AUTHORIZATION_ENDPOINT') . '?' . http_build_query($query);
 
     $response->setStatusCode(302);
     $response->headers->set('Location', $authURL);
@@ -160,7 +160,7 @@ class Controller {
     $params = [
       'grant_type' => 'authorization_code',
       'code' => $request->get('code'),
-      'redirect_uri' => Config::$baseURL . '/auth/redirect',
+      'redirect_uri' => getenv('BASE_URL') . '/auth/redirect',
       'client_id' => $cache->client_id,
       'code_verifier' => $cache->pkce_verifier,
     ];
@@ -169,7 +169,7 @@ class Controller {
     }
 
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, Config::$tokenEndpoint);
+    curl_setopt($ch, CURLOPT_URL, getenv('TOKEN_ENDPOINT'));
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -219,7 +219,7 @@ class Controller {
     # Count the number of requests per minute
     $bucket = 'ratelimit-'.floor(time()/60).'-'.$device_code;
 
-    if(Cache::get($bucket) >= Config::$limitRequestsPerMinute) {
+    if(Cache::get($bucket) >= getenv('LIMIT_REQUESTS_PER_MINUTE')) {
       return $this->error($response, 'slow_down');
     }
 
