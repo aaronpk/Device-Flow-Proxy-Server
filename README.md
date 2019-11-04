@@ -19,6 +19,31 @@ You will need to install Redis if it is not already on your system, or point to 
 
 Define your OAuth server's authorization endpoint and token endpoint URL.
 
+### Heroku Deploy
+
+To deploy this in Heroku, you'll need to do the following:
+
+Create a new Heroku application, and take note of the name.
+
+Define environment variables in Heroku's admin interface based on the values from `.env.example` with the exception of `REDIS_URL`.
+
+![Heroku Config](heroku-env.png)
+
+```
+# Log in to your Heroku account
+heroku login
+
+# Define the Heroku upstream git repo from your app name
+heroku git:remote -a oauth-device-flow-demo
+
+# Enable Redis for your application
+heroku addons:create heroku-redis:hobby-dev
+
+# Deploy to Heroku
+git push heroku master
+```
+
+
 Usage
 -----
 
