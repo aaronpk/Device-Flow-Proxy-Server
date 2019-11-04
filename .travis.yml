@@ -5,6 +5,7 @@ sudo: false
 services:
 - redis
 before_script:
-- cp config.template.php config.php
 - composer self-update
 - composer install --prefer-dist --no-interaction
+env:
+  - BASE_URL=http://localhost:8080 LIMIT_REQUESTS_PER_MINUTE=12 AUTHORIZATION_ENDPOINT=https://example.com/oauth2/authorize TOKEN_ENDPOINT=https://example.com/oauth2/token
