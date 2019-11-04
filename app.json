@@ -1,0 +1,9 @@
+{
+  "name": "OAuth Device Flow Proxy Server",
+  "description": "An application showing how to create a Device Flow Proxy Server in PHP on Heroku.",
+  "keywords": ["oauth", "php", "demo", "example"],
+  "repository": "https://github.com/aaronpk/Device-Flow-Proxy-Server",
+  "addons": [
+      "heroku-redis"
+  ]
+}
